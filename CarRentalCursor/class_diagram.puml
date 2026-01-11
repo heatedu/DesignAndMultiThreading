@@ -1,0 +1,338 @@
+@startuml Car Rental System Class Diagram - With Design Patterns
+
+' Styling
+skinparam classAttributeIconSize 0
+skinparam class {
+    BackgroundColor LightYellow
+    BorderColor Black
+    ArrowColor Black
+}
+
+' Enumerations
+enum VehicleType {
+    ECONOMY
+    LUXURY
+    SUV
+    SEDAN
+    HATCHBACK
+}
+
+enum VehicleStatus {
+    AVAILABLE
+    RESERVED
+    RENTED
+    MAINTENANCE
+    OUT_OF_SERVICE
+}
+
+enum ReservationStatus {
+    PENDING
+    CONFIRMED
+    IN_PROGRESS
+    COMPLETED
+    CANCELLED
+    NO_SHOW
+}
+
+enum PaymentType {
+    CREDIT_CARD
+    DEBIT_CARD
+    CASH
+    UPI
+    NET_BANKING
+}
+
+enum PaymentStatus {
+    PENDING
+    PROCESSING
+    COMPLETED
+    FAILED
+    REFUNDED
+}
+
+' FACTORY PATTERN - VehicleFactory
+class VehicleFactory <<Factory>> {
+    --
+    + {static} createVehicle(type, regNum, model, rate): Vehicle*
+    + {static} validateVehicleParams(regNum, rate): bool
+}
+
+' Abstract Vehicle Class
+abstract class Vehicle {
+    # registrationNumber: string
+    # model: string
+    # type: VehicleType
+    # dailyRate: double
+    # status: VehicleStatus
+    --
+    + Vehicle(regNum, model, type, rate)
+    + {abstract} calculatePrice(days): double
+    + getRegNumber(): string
+    + getModel(): string
+    + getType(): VehicleType
+    + getStatus(): VehicleStatus
+    + getDailyRate(): double
+    + setStatus(status): void
+}
+
+' Concrete Vehicle Classes
+class EconomyVehicle {
+    + EconomyVehicle(regNum, model, rate)
+    + calculatePrice(days): double
+    --
+    Returns: dailyRate * days
+}
+
+class LuxuryVehicle {
+    + LuxuryVehicle(regNum, model, rate)
+    + calculatePrice(days): double
+    --
+    Returns: dailyRate * days * 1.5
+}
+
+class SUVVehicle {
+    + SUVVehicle(regNum, model, rate)
+    + calculatePrice(days): double
+    --
+    Returns: dailyRate * days * 1.3
+}
+
+' User Class
+class User {
+    - userId: string
+    - name: string
+    - licenseNumber: string
+    --
+    + User(id, name, license)
+    + getUserId(): string
+    + getName(): string
+    + getLicense(): string
+}
+
+' STRATEGY PATTERN - Payment Strategy Hierarchy
+abstract class PaymentStrategy <<Strategy>> {
+    # status: PaymentStatus
+    # amount: double
+    # transactionId: string
+    --
+    + {abstract} processPayment(amt, details): bool
+    + {abstract} getPaymentType(): string
+    + {abstract} validatePayment(): bool
+    + getStatus(): PaymentStatus
+    + getTransactionId(): string
+}
+
+class CreditCardPayment {
+    - cardNumber: string
+    - cvv: string
+    - expiryDate: string
+    - cardHolderName: string
+    --
+    + processPayment(amt, details): bool
+    + getPaymentType(): string
+    + validatePayment(): bool
+}
+
+class DebitCardPayment {
+    - cardNumber: string
+    - pin: string
+    - bankName: string
+    --
+    + processPayment(amt, details): bool
+    + getPaymentType(): string
+    + validatePayment(): bool
+}
+
+class UPIPayment {
+    - upiId: string
+    - appName: string
+    --
+    + processPayment(amt, details): bool
+    + getPaymentType(): string
+    + validatePayment(): bool
+}
+
+class CashPayment {
+    - receiptNumber: string
+    - collectorName: string
+    --
+    + processPayment(amt, details): bool
+    + getPaymentType(): string
+    + validatePayment(): bool
+}
+
+class NetBankingPayment {
+    - bankName: string
+    - accountNumber: string
+    - ifscCode: string
+    --
+    + processPayment(amt, details): bool
+    + getPaymentType(): string
+    + validatePayment(): bool
+}
+
+' Payment Context Class
+class Payment {
+    - paymentId: string
+    - strategy: PaymentStrategy*
+    - reservationId: string
+    --
+    + Payment(id, resId, strategy)
+    + process(amount): bool
+    + setStrategy(strategy): void
+    + getStatus(): PaymentStatus
+    + getTransactionId(): string
+    + getPaymentType(): string
+}
+
+' Reservation Class with STATE PATTERN
+class Reservation {
+    - reservationId: string
+    - userId: string
+    - vehicleRegNumber: string
+    - startTime: time_t
+    - endTime: time_t
+    - createdAt: time_t
+    - pickupTime: time_t
+    - returnTime: time_t
+    - status: ReservationStatus
+    - totalCost: double
+    - payment: Payment*
+    --
+    + Reservation(id, userId, vehicleReg, start, end)
+    + hasConflict(start, end): bool
+    + confirm(): bool
+    + startRental(): bool
+    + complete(): bool
+    + cancel(): bool
+    + markNoShow(): bool
+    + setPayment(payment): void
+    + processPayment(): bool
+    + getStatusString(): string
+    + getReservationId(): string
+    + getVehicleRegNumber(): string
+    + getUserId(): string
+    + getStatus(): ReservationStatus
+    + getTotalCost(): double
+    + setTotalCost(cost): void
+}
+
+' Store Class (uses Factory)
+class Store {
+    - storeId: string
+    - location: string
+    - address: string
+    - inventory: map<string, Vehicle*>
+    --
+    + Store(id, location, address)
+    + addVehicle(vehicle): void
+    + createAndAddVehicle(type, regNum, model, rate): bool
+    + getVehicle(regNumber): Vehicle*
+    + getAvailableVehicles(type): vector<Vehicle*>
+    + getAllAvailableVehicles(): vector<Vehicle*>
+    + getVehiclesByStatus(status): vector<Vehicle*>
+    + getLocation(): string
+    + getStoreId(): string
+}
+
+' Singleton CarRentalSystem
+class CarRentalSystem <<Singleton>> {
+    - {static} instance: CarRentalSystem*
+    - {static} instanceMutex: mutex
+    - stores: map<string, Store*>
+    - users: map<string, User*>
+    - reservations: map<string, Reservation*>
+    - reservationCounter: int
+    - paymentCounter: int
+    --
+    - CarRentalSystem()
+    + {static} getInstance(): CarRentalSystem*
+    + addStore(store): void
+    + getStore(location): Store*
+    + addUser(user): void
+    + getUser(userId): User*
+    + searchVehicles(location, type, start, end): vector<Vehicle*>
+    + createReservation(userId, vehicleReg, start, end, paymentStrategy): Reservation*
+    + processReservationPayment(resId): bool
+    + startRental(resId): bool
+    + cancelReservation(resId): bool
+    + completeRental(resId): bool
+    + addVehicleToStore(location, type, regNum, model, rate): bool
+    - hasConflict(vehicleReg, start, end): bool
+    - findVehicle(regNumber): Vehicle*
+}
+
+' Inheritance Relationships
+Vehicle <|-- EconomyVehicle
+Vehicle <|-- LuxuryVehicle
+Vehicle <|-- SUVVehicle
+
+PaymentStrategy <|-- CreditCardPayment
+PaymentStrategy <|-- DebitCardPayment
+PaymentStrategy <|-- UPIPayment
+PaymentStrategy <|-- CashPayment
+PaymentStrategy <|-- NetBankingPayment
+
+' Factory Pattern Relationships
+VehicleFactory ..> Vehicle : <<creates>>
+VehicleFactory ..> EconomyVehicle : <<creates>>
+VehicleFactory ..> LuxuryVehicle : <<creates>>
+VehicleFactory ..> SUVVehicle : <<creates>>
+
+' Strategy Pattern Relationships
+Payment o-- PaymentStrategy : uses strategy
+Reservation o-- Payment : has
+
+' Enum Associations
+Vehicle -- VehicleType : uses
+Vehicle -- VehicleStatus : uses
+Reservation -- ReservationStatus : uses
+PaymentStrategy -- PaymentStatus : uses
+PaymentStrategy -- PaymentType : uses
+
+' Composition/Aggregation
+CarRentalSystem "1" *-- "0..*" Store : manages
+CarRentalSystem "1" *-- "0..*" User : manages
+CarRentalSystem "1" *-- "0..*" Reservation : manages
+Store "1" *-- "0..*" Vehicle : contains
+Reservation "0..*" --> "1" Vehicle : refers to
+Store ..> VehicleFactory : uses
+CarRentalSystem ..> VehicleFactory : uses
+
+' Notes
+note right of Vehicle
+  Abstract base class
+  Uses Template Method pattern
+  for polymorphic pricing
+end note
+
+note right of CarRentalSystem
+  SINGLETON PATTERN
+  Thread-safe single instance
+  coordinating all operations
+end note
+
+note right of VehicleFactory
+  FACTORY PATTERN
+  Encapsulates vehicle creation
+  Easy to add new types
+end note
+
+note right of PaymentStrategy
+  STRATEGY PATTERN
+  5 payment methods
+  Runtime selection
+end note
+
+note bottom of Reservation
+  STATE PATTERN
+  6 states with validated transitions:
+  PENDING → CONFIRMED → IN_PROGRESS
+  → COMPLETED / CANCELLED / NO_SHOW
+  
+  hasConflict() implements
+  interval overlap detection
+end note
+
+@enduml
+

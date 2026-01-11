@@ -1,0 +1,99 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\Enums">
+      <UniqueIdentifier>{8f6c1c5a-2b3d-4e8f-9a1b-5c7d8e9f0a1b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Patterns">
+      <UniqueIdentifier>{9a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core">
+      <UniqueIdentifier>{1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Building.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Elevator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ElevatorController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ElevatorDisplay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ElevatorRequest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Floor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FCFSSchedulingStrategy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ScanSchedulingStrategy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LookSchedulingStrategy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CommonEnums.h">
+      <Filter>Header Files\Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="ElevatorObserver.h">
+      <Filter>Header Files\Patterns</Filter>
+    </ClInclude>
+    <ClInclude Include="ElevatorDisplay.h">
+      <Filter>Header Files\Patterns</Filter>
+    </ClInclude>
+    <ClInclude Include="ElevatorCommand.h">
+      <Filter>Header Files\Patterns</Filter>
+    </ClInclude>
+    <ClInclude Include="ElevatorRequest.h">
+      <Filter>Header Files\Patterns</Filter>
+    </ClInclude>
+    <ClInclude Include="SchedulingStrategy.h">
+      <Filter>Header Files\Patterns</Filter>
+    </ClInclude>
+    <ClInclude Include="FCFSSchedulingStrategy.h">
+      <Filter>Header Files\Patterns</Filter>
+    </ClInclude>
+    <ClInclude Include="ScanSchedulingStrategy.h">
+      <Filter>Header Files\Patterns</Filter>
+    </ClInclude>
+    <ClInclude Include="LookSchedulingStrategy.h">
+      <Filter>Header Files\Patterns</Filter>
+    </ClInclude>
+    <ClInclude Include="Building.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Elevator.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="ElevatorController.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Floor.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,298 @@
+================================================================================
+    CAR RENTAL SYSTEM - WHITEBOARD CLASS DIAGRAM
+    (Quick version for interviews - 5 minutes to draw)
+================================================================================
+
+SIMPLIFIED CLASS DIAGRAM:
+=========================
+
+                    ┌─────────────────────┐
+                    │ CarRentalSystem     │ <<Singleton>>
+                    │ ─────────────────── │
+                    │ - stores            │
+                    │ - users             │
+                    │ - reservations      │
+                    │ ─────────────────── │
+                    │ + searchVehicles()  │
+                    │ + createReservation │
+                    │ + cancelReservation │
+                    └──────────┬──────────┘
+                               │
+                ┌──────────────┼──────────────┐
+                │              │              │
+                ▼              ▼              ▼
+        ┌──────────┐   ┌──────────┐   ┌─────────────┐
+        │  Store   │   │   User   │   │ Reservation │
+        │──────────│   │──────────│   │─────────────│
+        │-location │   │- name    │   │- vehicleReg │
+        │-inventory│   │- license │   │- startTime  │
+        │──────────│   │──────────│   │- endTime    │
+        │+addCar() │   │+getName()│   │─────────────│
+        │+getCar() │   └──────────┘   │+hasConflict│
+        └────┬─────┘                   └─────────────┘
+             │
+             │ has many
+             ▼
+        ┌──────────┐
+        │ Vehicle  │ <<abstract>>
+        │──────────│
+        │- regNum  │
+        │- model   │
+        │- rate    │
+        │──────────│
+        │+calcPrice│ <<abstract>>
+        └────┬─────┘
+             │
+             │ inherits
+    ┌────────┼────────┐
+    ▼        ▼        ▼
+ ┌────┐  ┌────┐  ┌────┐
+ │Eco │  │Lux │  │SUV │
+ └────┘  └────┘  └────┘
+
+
+QUICK SKETCH VERSION (30 seconds):
+===================================
+
+    System
+      |
+   -------
+   |  |  |
+  Store User Reservation
+   |              |
+ Vehicle ─────────┘
+   |
+ -------
+ | | |
+ E L S
+
+
+KEY RELATIONSHIPS TO MENTION:
+==============================
+
+1. CarRentalSystem (Singleton)
+   → Manages Stores (1 to many)
+   → Manages Users (1 to many)
+   → Manages Reservations (1 to many)
+
+2. Store
+   → Contains Vehicles (1 to many, composition)
+
+3. Reservation
+   → Refers to Vehicle (many to 1, association)
+
+4. Vehicle (Abstract)
+   ← EconomyVehicle (inheritance)
+   ← LuxuryVehicle (inheritance)
+   ← SUVVehicle (inheritance)
+
+
+INTERVIEW TALKING POINTS (while drawing):
+==========================================
+
+1. "At the top, we have a Singleton CarRentalSystem that coordinates everything"
+
+2. "It manages three main entities: Stores, Users, and Reservations"
+
+3. "Each Store has an inventory of Vehicles"
+
+4. "Vehicle is abstract with three concrete types - Economy, Luxury, and SUV"
+
+5. "Each implements its own pricing logic using Template Method pattern"
+
+6. "Reservations link a User to a Vehicle for a time period"
+
+7. "The key algorithm is in Reservation.hasConflict() to prevent double-booking"
+
+
+STEP-BY-STEP DRAWING GUIDE:
+============================
+
+Step 1: Draw CarRentalSystem box at top
+   "This is our Singleton controller"
+
+Step 2: Draw three boxes below: Store, User, Reservation
+   "These are the main entities we manage"
+
+Step 3: Draw Vehicle box under Store with arrow
+   "Store contains multiple vehicles"
+
+Step 4: Draw three small boxes under Vehicle: E, L, S
+   "Three vehicle types inheriting from abstract Vehicle"
+
+Step 5: Draw arrow from Reservation to Vehicle
+   "Reservation refers to a vehicle"
+
+Step 6: Add key methods:
+   - searchVehicles() on System
+   - hasConflict() on Reservation
+   - calculatePrice() on Vehicle
+
+Total time: 3-4 minutes
+
+
+ENUMS TO MENTION (don't draw, just list):
+==========================================
+
+VehicleType:     ECONOMY, LUXURY, SUV
+VehicleStatus:   AVAILABLE, RESERVED, RENTED
+ReservationStatus: ACTIVE, COMPLETED, CANCELLED
+
+
+DESIGN PATTERNS TO HIGHLIGHT:
+==============================
+
+1. SINGLETON: CarRentalSystem
+   - Single instance managing the entire system
+   - getInstance() static method
+
+2. TEMPLATE METHOD: Vehicle hierarchy
+   - Abstract calculatePrice() method
+   - Each subclass provides implementation
+   - Polymorphism at runtime
+
+3. STRATEGY (extensible): Pricing strategies
+   - Could add WeekendPricing, SeasonalPricing
+   - Strategy pattern for flexibility
+
+
+CRITICAL ALGORITHMS TO EXPLAIN:
+================================
+
+1. CONFLICT DETECTION (most important!)
+   
+   hasConflict(newStart, newEnd):
+       if (cancelled) return false
+       return NOT (newEnd <= start OR newStart >= end)
+   
+   "Two time intervals overlap if one doesn't end before the other starts"
+
+2. SEARCH & FILTER
+   
+   searchVehicles(location, type, dates):
+       vehicles = store.getVehicles(type)
+       for each vehicle:
+           if NO conflict with dates:
+               add to results
+       return results
+
+3. POLYMORPHIC PRICING
+   
+   Economy:  price = rate × days
+   Luxury:   price = rate × days × 1.5
+   SUV:      price = rate × days × 1.3
+
+
+QUICK COMPARISON TABLE:
+========================
+
+Class          | Pattern    | Key Method
+─────────────────────────────────────────
+CarRentalSystem| Singleton  | createReservation()
+Vehicle        | Template   | calculatePrice()
+Store          | Composite  | getAvailableVehicles()
+Reservation    | -          | hasConflict()
+
+
+FOLLOW-UP DISCUSSION POINTS:
+=============================
+
+After drawing, be ready to discuss:
+
+1. "How would you handle concurrent bookings?"
+   → Add mutex to createReservation()
+
+2. "How to scale for millions of vehicles?"
+   → Partition by location, cache, indexes
+
+3. "Database schema?"
+   → Show tables: vehicles, stores, users, reservations
+   → Index on (vehicle_id, start_time, end_time)
+
+4. "Add payment processing?"
+   → PaymentProcessor hierarchy (Strategy pattern)
+
+5. "Different pricing models?"
+   → PricingStrategy interface with WeekendPricing, etc.
+
+
+COMMON MISTAKES TO AVOID:
+==========================
+
+❌ Making Vehicle a concrete class (should be abstract)
+❌ Not showing the Singleton pattern clearly
+❌ Forgetting the association between Reservation and Vehicle
+❌ Not mentioning conflict detection logic
+❌ Drawing too many details (keep it simple!)
+
+
+TIME MANAGEMENT:
+================
+
+In a 1-hour interview:
+
+0-3 min:  Draw high-level diagram
+3-5 min:  Explain relationships
+5-10 min: Discuss key methods
+10-40 min: Code implementation
+40-60 min: Extensions and scalability
+
+Don't spend more than 5 minutes on the diagram!
+
+
+ALTERNATIVE: COMPONENT VIEW
+============================
+
+If interviewer asks for component view:
+
+    ┌─────────────────────────────┐
+    │   Car Rental System         │
+    │  ┌────────────────────┐     │
+    │  │ Business Logic     │     │
+    │  │  - Reservation Mgmt│     │
+    │  │  - Conflict Check  │     │
+    │  │  - Pricing Engine  │     │
+    │  └────────────────────┘     │
+    │  ┌────────────────────┐     │
+    │  │ Data Layer         │     │
+    │  │  - Stores          │     │
+    │  │  - Vehicles        │     │
+    │  │  - Users           │     │
+    │  └────────────────────┘     │
+    └─────────────────────────────┘
+
+
+SEQUENCE FOR KEY USE CASE:
+===========================
+
+Create Reservation Flow:
+
+User → System: searchVehicles(location, type, dates)
+System → Store: getAvailableVehicles(type)
+Store → System: [list of vehicles]
+System → User: [filtered by date availability]
+
+User → System: createReservation(vehicleId, dates)
+System → System: hasConflict? (check all reservations)
+System → Vehicle: calculatePrice(days)
+System → Reservation: new Reservation(...)
+System → Vehicle: setStatus(RESERVED)
+System → User: confirmation
+
+
+READY TO DRAW:
+===============
+
+Practice drawing this in under 3 minutes:
+
+1. One big box (System)
+2. Three medium boxes (Store, User, Reservation)
+3. One medium box (Vehicle)
+4. Three small boxes (E, L, S)
+5. Arrows showing relationships
+6. Label with "Singleton", "Abstract", "Inherits"
+
+That's it! Keep it simple, explain clearly.
+
+================================================================================
+

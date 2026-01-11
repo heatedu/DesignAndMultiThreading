@@ -1,0 +1,480 @@
+╔══════════════════════════════════════════════════════════════════════════════════════╗
+║                      CACHE SYSTEM - VISUAL ARCHITECTURE OVERVIEW                     ║
+║                        C++ Thread-Safe Cache with LRU Eviction                       ║
+╚══════════════════════════════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                            COMPONENT RELATIONSHIP DIAGRAM
+═══════════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                              CLIENT APPLICATION                                      │
+│                                 (main.cpp)                                           │
+│                                                                                      │
+│    cache.updateData("key", "value").get();  // Write operation                      │
+│    string val = cache.accessData("key").get();  // Read operation                   │
+└──────────────────────────────────┬──────────────────────────────────────────────────┘
+                                   │
+                                   │ calls
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                                CACHE<K, V>                                           │
+│                         (Core Orchestrator Class)                                    │
+│                                                                                      │
+│  ┌─────────────────────────────────────────────────────────────────┐               │
+│  │  future<V> accessData(const K& key)                              │               │
+│  │  future<void> updateData(const K& key, const V& value)           │               │
+│  │  void shutdown()                                                 │               │
+│  └─────────────────────────────────────────────────────────────────┘               │
+│                                                                                      │
+│  Private Members:                                                                   │
+│  ├─ CacheStorage<K,V>* cacheStorage    (in-memory cache)                           │
+│  ├─ DBStorage<K,V>* dbStorage          (persistent storage)                        │
+│  ├─ WritePolicy<K,V>* writePolicy      (write strategy)                            │
+│  ├─ EvictionAlgorithm<K>* evictionAlg  (eviction strategy)                         │
+│  └─ KeyBasedExecutor executor          (thread pool)                               │
+└───┬────────────────────┬────────────────────┬────────────────────┬──────────────────┘
+    │                    │                    │                    │
+    │ delegates to       │ delegates to       │ delegates to       │ delegates to
+    ▼                    ▼                    ▼                    ▼
+┌──────────┐      ┌──────────┐      ┌──────────────┐      ┌──────────────────┐
+│  CACHE   │      │    DB    │      │    WRITE     │      │    EVICTION      │
+│ STORAGE  │      │  STORAGE │      │    POLICY    │      │    ALGORITHM     │
+│Interface │      │Interface │      │  Interface   │      │    Interface     │
+└────┬─────┘      └────┬─────┘      └──────┬───────┘      └────────┬─────────┘
+     │                 │                    │                       │
+     │ implemented by  │ implemented by     │ implemented by        │ implemented by
+     ▼                 ▼                    ▼                       ▼
+┌──────────┐      ┌──────────┐      ┌──────────────┐      ┌──────────────────┐
+│ InMemory │      │  Simple  │      │WriteThrough  │      │       LRU        │
+│  Cache   │      │    DB    │      │    Policy    │      │    Eviction      │
+│ Storage  │      │  Storage │      │              │      │    Algorithm     │
+└──────────┘      └──────────┘      └──────────────┘      └────────┬─────────┘
+                                                                    │
+                                                                    │ uses
+                                                                    ▼
+                                                          ┌──────────────────┐
+                                                          │ DoublyLinkedList │
+                                                          │    + HashMap     │
+                                                          └──────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                              THREAD AFFINITY ARCHITECTURE
+═══════════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                            KEY-BASED EXECUTOR                                        │
+│                   (Thread Pool with Key Affinity)                                    │
+│                                                                                      │
+│  hash(key) % numThreads → threadIndex → queue on that thread                        │
+│                                                                                      │
+│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐  │
+│  │   THREAD 0     │  │   THREAD 1     │  │   THREAD 2     │  │   THREAD 3     │  │
+│  │                │  │                │  │                │  │                │  │
+│  │ Keys: A, E, I  │  │ Keys: B, F, J  │  │ Keys: C, G, K  │  │ Keys: D, H, L  │  │
+│  │                │  │                │  │                │  │                │  │
+│  │ ┌────────────┐ │  │ ┌────────────┐ │  │ ┌────────────┐ │  │ ┌────────────┐ │  │
+│  │ │ Task Queue │ │  │ │ Task Queue │ │  │ │ Task Queue │ │  │ │ Task Queue │ │  │
+│  │ ├────────────┤ │  │ ├────────────┤ │  │ ├────────────┤ │  │ ├────────────┤ │  │
+│  │ │ Op1_A      │ │  │ │ Op1_B      │ │  │ │ Op1_C      │ │  │ │ Op1_D      │ │  │
+│  │ │ Op2_A      │ │  │ │ Op2_B      │ │  │ │ Op2_C      │ │  │ │ Op2_D      │ │  │
+│  │ │ Op3_E      │ │  │ │ Op3_F      │ │  │ │ Op3_G      │ │  │ │ Op4_H      │ │  │
+│  │ └────────────┘ │  │ └────────────┘ │  │ └────────────┘ │  │ └────────────┘ │  │
+│  │                │  │                │  │                │  │                │  │
+│  │ Sequential     │  │ Sequential     │  │ Sequential     │  │ Sequential     │  │
+│  │ Execution      │  │ Execution      │  │ Execution      │  │ Execution      │  │
+│  └────────────────┘  └────────────────┘  └────────────────┘  └────────────────┘  │
+│                                                                                      │
+│  GUARANTEES:                                                                         │
+│  ✓ Same key → same thread → sequential execution → ordering guaranteed             │
+│  ✓ Different keys → different threads → parallel execution → high throughput       │
+│  ✓ "Read your own writes" automatically satisfied                                  │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                            LRU EVICTION DATA STRUCTURE
+═══════════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                      LRU EVICTION ALGORITHM INTERNALS                                │
+│                                                                                      │
+│  DoublyLinkedList (tracks access order):                                            │
+│                                                                                      │
+│  HEAD (Least Recently Used)              TAIL (Most Recently Used)                  │
+│    ↓                                           ↓                                    │
+│  ┌───┐    ┌───┐    ┌───┐    ┌───┐    ┌───┐                                        │
+│  │ A │◄──►│ B │◄──►│ C │◄──►│ D │◄──►│ E │                                        │
+│  └───┘    └───┘    └───┘    └───┘    └───┘                                        │
+│    │        │        │        │        │                                            │
+│    └────────┴────────┴────────┴────────┘                                            │
+│                     │                                                               │
+│                     ▼                                                               │
+│  HashMap (O(1) lookup):                                                             │
+│  ┌─────────────────────────────────────┐                                           │
+│  │ Key  │  Node Pointer                │                                           │
+│  ├──────┼───────────────────────────────┤                                           │
+│  │  A   │  → Node(A)                    │                                           │
+│  │  B   │  → Node(B)                    │                                           │
+│  │  C   │  → Node(C)                    │                                           │
+│  │  D   │  → Node(D)                    │                                           │
+│  │  E   │  → Node(E)                    │                                           │
+│  └──────┴───────────────────────────────┘                                           │
+│                                                                                      │
+│  OPERATIONS:                                                                         │
+│  keyAccessed("C"):                                                                   │
+│    1. Find Node(C) in HashMap: O(1)                                                 │
+│    2. Detach Node(C) from list: O(1)                                                │
+│    3. Add Node(C) to tail: O(1)                                                     │
+│                                                                                      │
+│  Result:  HEAD → A ⇄ B ⇄ D ⇄ E ⇄ C ← TAIL                                          │
+│                                                                                      │
+│  evictKey():                                                                         │
+│    1. Get head node (A): O(1)                                                       │
+│    2. Remove from HashMap: O(1)                                                     │
+│    3. Remove from list: O(1)                                                        │
+│                                                                                      │
+│  Result:  HEAD → B ⇄ D ⇄ E ⇄ C ← TAIL                                              │
+│           Returns: "A"                                                              │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                              OPERATION FLOW DIAGRAMS
+═══════════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                       READ OPERATION: accessData("A")                                │
+│                                                                                      │
+│  1. CLIENT                                                                           │
+│     │                                                                                │
+│     │ cache.accessData("A")                                                         │
+│     ▼                                                                                │
+│  2. CACHE                                                                            │
+│     │                                                                                │
+│     │ submitTask("A", lambda)                                                       │
+│     ▼                                                                                │
+│  3. KEY-BASED EXECUTOR                                                               │
+│     │                                                                                │
+│     │ hash("A") % 4 = 1 → Thread 1                                                  │
+│     ▼                                                                                │
+│  4. THREAD 1                                                                         │
+│     │                                                                                │
+│     ├─ if (!cacheStorage->containsKey("A"))                                         │
+│     │    throw exception("Key not found")                                           │
+│     │                                                                                │
+│     ├─ evictionAlg->keyAccessed("A")  // Move to MRU                                │
+│     │    └─ Update DoublyLinkedList                                                 │
+│     │                                                                                │
+│     └─ return cacheStorage->get("A")                                                │
+│        └─ Return future<string>                                                     │
+│                                                                                      │
+│  5. CLIENT                                                                           │
+│     │                                                                                │
+│     │ future.get() → "Apple"                                                        │
+│     └─ Complete                                                                     │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│              WRITE OPERATION (NEW KEY): updateData("F", "Fig")                       │
+│                         [Cache is full: A, B, C, D, E]                               │
+│                                                                                      │
+│  1. CLIENT                                                                           │
+│     │                                                                                │
+│     │ cache.updateData("F", "Fig")                                                  │
+│     ▼                                                                                │
+│  2. CACHE                                                                            │
+│     │                                                                                │
+│     │ submitTask("F", lambda)                                                       │
+│     ▼                                                                                │
+│  3. KEY-BASED EXECUTOR                                                               │
+│     │                                                                                │
+│     │ hash("F") % 4 = 2 → Thread 2                                                  │
+│     ▼                                                                                │
+│  4. THREAD 2                                                                         │
+│     │                                                                                │
+│     ├─ if (!cacheStorage->containsKey("F"))  // NEW key                             │
+│     │                                                                                │
+│     ├─ if (cacheStorage->size() >= capacity)  // Cache FULL                         │
+│     │  │                                                                             │
+│     │  ├─ evictedKey = evictionAlg->evictKey()                                      │
+│     │  │  └─ Returns "A" (LRU)                                                      │
+│     │  │                                                                             │
+│     │  ├─ Check thread affinity:                                                    │
+│     │  │  hash("A") % 4 = 1 (Thread 1)                                              │
+│     │  │  hash("F") % 4 = 2 (Thread 2) ← Current thread                             │
+│     │  │  → Different threads!                                                      │
+│     │  │                                                                             │
+│     │  └─ Submit removal to Thread 1 and WAIT:                                      │
+│     │     submitTask("A", []{ cacheStorage->remove("A"); }).get()                   │
+│     │                                                                                │
+│     ├─ writePolicy->write("F", "Fig")                                               │
+│     │  │                                                                             │
+│     │  ├─ async([&]{ cacheStorage->put("F", "Fig"); })                              │
+│     │  └─ async([&]{ dbStorage->write("F", "Fig"); })                               │
+│     │     └─ WAIT for both futures                                                  │
+│     │                                                                                │
+│     └─ evictionAlg->keyAccessed("F")  // Add to MRU                                 │
+│                                                                                      │
+│  5. CLIENT                                                                           │
+│     │                                                                                │
+│     │ future.get() → void (success)                                                 │
+│     └─ Complete                                                                     │
+│                                                                                      │
+│  RESULT:                                                                             │
+│    Cache now contains: B, C, D, E, F                                                │
+│    "A" was evicted (LRU)                                                            │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│          WRITE-THROUGH POLICY: Concurrent Cache & DB Updates                         │
+│                                                                                      │
+│  writePolicy->write("key", "value", cacheStorage, dbStorage)                         │
+│                                                                                      │
+│                         ┌─────────────────────┐                                    │
+│                         │  Write-Through      │                                    │
+│                         │      Policy         │                                    │
+│                         └──────────┬──────────┘                                    │
+│                                    │                                                │
+│                     ┌──────────────┴──────────────┐                                │
+│                     │                              │                                │
+│                     ▼                              ▼                                │
+│          ┌────────────────────┐        ┌────────────────────┐                      │
+│          │  async([&]{        │        │  async([&]{        │                      │
+│          │    cacheStorage    │        │    dbStorage       │                      │
+│          │    ->put(k, v);    │        │    ->write(k, v);  │                      │
+│          │  });               │        │  });               │                      │
+│          └────────┬───────────┘        └────────┬───────────┘                      │
+│                   │                              │                                  │
+│                   │ ~5ms                         │ ~20ms                            │
+│                   │                              │                                  │
+│                   └──────────────┬───────────────┘                                  │
+│                                  │                                                  │
+│                                  ▼                                                  │
+│                         ┌─────────────────┐                                        │
+│                         │  allOf().get()  │                                        │
+│                         │  Wait for both  │                                        │
+│                         └─────────────────┘                                        │
+│                                  │                                                  │
+│                                  ▼                                                  │
+│                         Total time: max(5ms, 20ms) = 20ms                           │
+│                         (Instead of 5ms + 20ms = 25ms sequential)                  │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                              DESIGN PATTERNS APPLIED
+═══════════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│  1. STRATEGY PATTERN                                                                 │
+│     ─────────────────                                                                │
+│                                                                                      │
+│     Problem: Need different eviction & write policies                               │
+│     Solution: Define interfaces, plug in implementations                            │
+│                                                                                      │
+│     ┌──────────────────┐                   ┌──────────────────┐                    │
+│     │ WritePolicy<K,V> │◄──────────────────│EvictionAlgo<K>   │                    │
+│     │    Interface     │                   │   Interface      │                    │
+│     └────────┬─────────┘                   └────────┬─────────┘                    │
+│              │ implemented by                       │ implemented by                │
+│     ┌────────┴─────────────┐              ┌────────┴─────────────┐                 │
+│     │                      │              │                      │                 │
+│     ▼                      ▼              ▼                      ▼                 │
+│  WriteThrough        WriteBack          LRU                   LFU                   │
+│   (current)          (future)        (current)              (future)                │
+│                                                                                      │
+│  Benefits:                                                                           │
+│  ✓ Runtime selection: cache.setPolicy(new WriteBackPolicy())                       │
+│  ✓ Easy extension: Add new policy without changing Cache                           │
+│  ✓ Testable: Mock policies in unit tests                                           │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│  2. DEPENDENCY INJECTION                                                             │
+│     ────────────────────                                                             │
+│                                                                                      │
+│     Problem: Cache needs multiple components, tight coupling is bad                 │
+│     Solution: Inject dependencies via constructor                                   │
+│                                                                                      │
+│     Cache(CacheStorage<K,V>* cache,                                                 │
+│           DBStorage<K,V>* db,                                                       │
+│           WritePolicy<K,V>* policy,        ← All dependencies injected              │
+│           EvictionAlgorithm<K>* eviction,                                           │
+│           int numExecutors)                                                         │
+│                                                                                      │
+│     Benefits:                                                                        │
+│     ✓ Testability: Inject mocks for testing                                         │
+│     ✓ Flexibility: Swap implementations easily                                      │
+│     ✓ Loose coupling: Cache doesn't create dependencies                             │
+│     ✓ Configuration: Build cache with different components                          │
+│                                                                                      │
+│     Example:                                                                         │
+│       // Production                                                                  │
+│       Cache cache(redisStorage, postgresDB, writeThrough, lru, 4);                  │
+│                                                                                      │
+│       // Testing                                                                     │
+│       Cache cache(mockStorage, mockDB, mockPolicy, mockEviction, 1);                │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│  3. TEMPLATE METHOD PATTERN                                                          │
+│     ────────────────────────                                                         │
+│                                                                                      │
+│     Problem: Define contract, allow different implementations                       │
+│     Solution: Abstract base class with pure virtual methods                         │
+│                                                                                      │
+│     template<typename K, typename V>                                                │
+│     class CacheStorage {                                                             │
+│     public:                                                                          │
+│         virtual void put(K, V) = 0;     ← Contract                                  │
+│         virtual V get(K) = 0;           ← Subclasses implement                      │
+│         virtual void remove(K) = 0;                                                 │
+│         virtual bool containsKey(K) = 0;                                            │
+│     };                                                                               │
+│                                                                                      │
+│     class InMemoryCacheStorage : public CacheStorage<K, V> {                        │
+│         void put(K, V) override { /* HashMap impl */ }                              │
+│         V get(K) override { /* HashMap impl */ }                                    │
+│     };                                                                               │
+│                                                                                      │
+│     Benefits:                                                                        │
+│     ✓ Polymorphism: Cache works with any CacheStorage implementation                │
+│     ✓ Contract enforcement: Compiler ensures all methods implemented                │
+│     ✓ Extensibility: Add RedisStorage without changing Cache                        │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│  4. RAII (Resource Acquisition Is Initialization)                                   │
+│     ──────────────────────────────────────────────                                   │
+│                                                                                      │
+│     Problem: Threads and resources need cleanup                                     │
+│     Solution: Tie resource lifetime to object lifetime                              │
+│                                                                                      │
+│     class KeyBasedExecutor {                                                         │
+│         vector<unique_ptr<ExecutorThread>> executors;                               │
+│                                                                                      │
+│     public:                                                                          │
+│         KeyBasedExecutor(int n) {                                                   │
+│             // Acquire: Create threads                                               │
+│             for (int i = 0; i < n; i++) {                                           │
+│                 executors[i]->thread = thread(...);                                 │
+│             }                                                                        │
+│         }                                                                            │
+│                                                                                      │
+│         ~KeyBasedExecutor() {                                                       │
+│             // Release: Automatic cleanup                                            │
+│             shutdown();                                                              │
+│         }                                                                            │
+│                                                                                      │
+│         void shutdown() {                                                            │
+│             for (auto& e : executors) {                                             │
+│                 e->stop();                                                           │
+│                 e->thread.join();  // Wait for thread                               │
+│             }                                                                        │
+│         }                                                                            │
+│     };                                                                               │
+│                                                                                      │
+│     Benefits:                                                                        │
+│     ✓ No resource leaks: Destructor automatically called                            │
+│     ✓ Exception safe: Cleanup happens even if exceptions thrown                     │
+│     ✓ No manual cleanup: Can't forget to call shutdown()                            │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                            COMPLEXITY ANALYSIS TABLE
+═══════════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                           TIME COMPLEXITY                                            │
+│                                                                                      │
+│  ┌─────────────────────────────┬──────────┬──────────┬──────────┐                  │
+│  │ Operation                   │   Best   │ Average  │  Worst   │                  │
+│  ├─────────────────────────────┼──────────┼──────────┼──────────┤                  │
+│  │ accessData(key)             │   O(1)   │   O(1)   │   O(1)   │                  │
+│  │ updateData(existing key)    │   O(1)   │   O(1)   │   O(1)   │                  │
+│  │ updateData(new key, !full)  │   O(1)   │   O(1)   │   O(1)   │                  │
+│  │ updateData(new key, full)   │   O(1)   │   O(1)   │   O(1)*  │                  │
+│  │ LRU keyAccessed()           │   O(1)   │   O(1)   │   O(1)   │                  │
+│  │ LRU evictKey()              │   O(1)   │   O(1)   │   O(1)   │                  │
+│  └─────────────────────────────┴──────────┴──────────┴──────────┘                  │
+│  * Cross-thread eviction may block briefly, but amortized O(1)                      │
+│                                                                                      │
+│  ┌─────────────────────────────────────────────────────────────┐                   │
+│  │                    SPACE COMPLEXITY                          │                   │
+│  ├─────────────────────────────────────────────┬────────────────┤                   │
+│  │ Component                                   │ Space          │                   │
+│  ├─────────────────────────────────────────────┼────────────────┤                   │
+│  │ Cache storage (HashMap)                     │ O(n)           │                   │
+│  │ LRU tracking (DLL + HashMap)                │ O(n)           │                   │
+│  │ Executor task queues                        │ O(pending)     │                   │
+│  │ Total                                       │ O(n + pending) │                   │
+│  └─────────────────────────────────────────────┴────────────────┘                   │
+│  where n = cache capacity, pending = pending operations                             │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                              FILE DEPENDENCIES GRAPH
+═══════════════════════════════════════════════════════════════════════════════════════
+
+main.cpp
+  │
+  ├─► Cache.h
+  │     │
+  │     ├─► CacheStorage.h ──────► InMemoryCacheStorage.h
+  │     │
+  │     ├─► DBStorage.h ──────────► SimpleDBStorage.h
+  │     │
+  │     ├─► WritePolicy.h ────────► WriteThroughPolicy.h
+  │     │
+  │     ├─► EvictionAlgorithm.h ──► LRUEvictionAlgorithm.h
+  │     │                              │
+  │     │                              └─► DoublyLinkedList.h
+  │     │
+  │     └─► KeyBasedExecutor.h
+
+
+Include Order (no circular dependencies):
+  1. Standard library headers (<iostream>, <future>, <mutex>, etc.)
+  2. Interface headers (CacheStorage.h, DBStorage.h, etc.)
+  3. Utility headers (DoublyLinkedList.h, KeyBasedExecutor.h)
+  4. Implementation headers (InMemoryCacheStorage.h, LRUEvictionAlgorithm.h, etc.)
+  5. Core header (Cache.h)
+  6. Main program (main.cpp)
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                                    SUMMARY
+═══════════════════════════════════════════════════════════════════════════════════════
+
+PROJECT STATS:
+──────────────
+  Total Files: 12 (11 headers + 1 source)
+  Lines of Code: ~700
+  Design Patterns: 4 (Strategy, DI, Template Method, RAII)
+  Threads: Configurable (default: 4)
+  Cache Capacity: Configurable (default: 5)
+
+KEY FEATURES:
+─────────────
+  ✓ Thread-safe with key-based affinity
+  ✓ O(1) LRU eviction algorithm
+  ✓ Write-through policy with concurrent updates
+  ✓ Generic template-based design
+  ✓ Async operations using std::future
+  ✓ Extensible strategy-based architecture
+
+INTERVIEW READINESS:
+────────────────────
+  ✓ 1-hour discussion scope
+  ✓ Multiple depth levels (high-level → deep dive)
+  ✓ Clear extension points
+  ✓ Trade-offs well documented
+  ✓ Production-ready patterns
+
+COMPLEXITY LEVEL:
+─────────────────
+  Target: SDE2
+  Topics: Concurrency, Data Structures, Design Patterns, System Design
+  Preparation Time: 5 hours to mastery
+
+═══════════════════════════════════════════════════════════════════════════════════════
+                                 END OF VISUAL OVERVIEW
+═══════════════════════════════════════════════════════════════════════════════════════
+

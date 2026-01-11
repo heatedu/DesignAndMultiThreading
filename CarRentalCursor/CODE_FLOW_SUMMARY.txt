@@ -1,0 +1,332 @@
+================================================================================
+                CODE FLOW DOCUMENTATION - SUMMARY
+================================================================================
+
+✅ CREATED TWO COMPREHENSIVE CODE FLOW DOCUMENTS
+
+================================================================================
+
+DOCUMENT 1: CODE_FLOW.md (Detailed Explanation)
+================================================
+
+What it contains:
+-----------------
+✅ Complete program execution flow from main() to end
+✅ Step-by-step breakdown of each operation
+✅ Code snippets showing actual implementation
+✅ Visual flow diagrams with arrows
+✅ Detailed method call sequences
+✅ Line-by-line explanation of critical logic
+
+Sections:
+---------
+1. System Initialization (Singleton creation)
+2. Store Setup
+3. Vehicle Creation (Factory Pattern in action)
+4. User Registration
+5. Vehicle Search (with conflict checking)
+6. Reservation Creation with Payment (Strategy Pattern)
+7. State Transitions (State Pattern)
+8. Conflict Prevention Algorithm
+9. Cancellation Flow
+
+Key Features:
+-------------
+• Shows actual code flow with file references
+• Includes line numbers
+• Explains what happens at each step
+• Shows decision points (if/else branches)
+• Demonstrates all 5 design patterns in action
+• Complete method call tree (26 method calls)
+
+Length: ~800 lines of detailed explanation
+
+
+DOCUMENT 2: EXECUTION_FLOW.txt (Visual Reference)
+==================================================
+
+What it contains:
+-----------------
+✅ ASCII art flowcharts
+✅ State diagrams
+✅ Decision trees
+✅ Pattern integration visualization
+✅ Quick reference diagrams
+✅ Simplified call sequences
+
+Visual Diagrams:
+---------------
+1. Complete User Journey (boxes and arrows)
+2. Singleton Pattern Creation Flow
+3. Factory Pattern Decision Tree
+4. Strategy Pattern Selection Diagram
+5. State Transition Diagram (all 6 states)
+6. Conflict Prevention Flow
+7. Payment Strategy Selection
+8. Design Patterns Integration Map
+9. Method Call Sequence (simplified)
+
+Key Features:
+-------------
+• Purely visual - easy to scan
+• Shows flow with boxes and arrows
+• State transitions clearly marked
+• Pattern relationships visualized
+• Decision points highlighted
+• Alternative paths shown
+
+Length: ~500 lines of ASCII art
+
+
+HOW TO USE THESE DOCUMENTS
+============================
+
+For Interview Preparation:
+--------------------------
+1. Study CODE_FLOW.md to understand exact execution
+2. Use EXECUTION_FLOW.txt to visualize the flow
+3. Practice explaining flow using the diagrams
+
+During Interview:
+-----------------
+1. Use EXECUTION_FLOW.txt diagrams to sketch on whiteboard
+2. Reference CODE_FLOW.md for detailed explanations
+3. Walk through complete user journey
+4. Show how patterns integrate
+
+For Code Understanding:
+-----------------------
+1. Start with EXECUTION_FLOW.txt for overview
+2. Deep dive with CODE_FLOW.md for specifics
+3. Cross-reference with actual code files
+
+
+FLOW COVERAGE
+=============
+
+Both documents cover:
+--------------------
+✅ Singleton instance creation (thread-safe)
+✅ Factory creating different vehicle types
+✅ Strategy pattern payment selection
+✅ State transitions through lifecycle
+✅ Enum state management
+✅ Conflict detection algorithm
+✅ Complete reservation cycle
+✅ Cancellation process
+✅ All 5 design patterns in action
+
+
+KEY FLOWS EXPLAINED
+===================
+
+1. Singleton Creation
+   └─► Thread-safe double-checked locking
+       └─► Returns same instance always
+
+2. Factory Pattern
+   └─► createVehicle(type) → switch statement
+       └─► Returns correct vehicle subclass
+           └─► Polymorphism enabled
+
+3. Strategy Pattern
+   └─► User selects payment method
+       └─► Strategy attached to Payment object
+           └─► processPayment() calls concrete strategy
+               └─► Credit Card / UPI / Cash / etc.
+
+4. State Pattern
+   └─► PENDING → CONFIRMED → IN_PROGRESS → COMPLETED
+       └─► Each transition validated
+           └─► Invalid transitions rejected
+
+5. Conflict Detection
+   └─► For each existing reservation:
+       └─► Check vehicle match
+           └─► Check time overlap
+               └─► Reject if conflict found
+
+
+COMPLETE RESERVATION LIFECYCLE
+===============================
+
+Step 1: Search
+   └─► searchVehicles() filters by location, type, dates
+
+Step 2: Select
+   └─► User chooses vehicle and payment method
+
+Step 3: Create
+   └─► createReservation() creates Reservation in PENDING state
+       └─► Payment strategy attached
+
+Step 4: Pay
+   └─► processPayment() executes strategy
+       └─► State: PENDING → CONFIRMED
+
+Step 5: Pickup
+   └─► startRental() called
+       └─► State: CONFIRMED → IN_PROGRESS
+           └─► Vehicle: RESERVED → RENTED
+
+Step 6: Return
+   └─► completeRental() called
+       └─► State: IN_PROGRESS → COMPLETED
+           └─► Vehicle: RENTED → AVAILABLE
+
+Alternative: Cancel
+   └─► cancelReservation() called
+       └─► State: CONFIRMED → CANCELLED
+           └─► Vehicle: RESERVED → AVAILABLE
+
+
+METHOD CALL DEPTH
+=================
+
+Deepest call stack:
+------------------
+main()
+  └─► processReservationPayment()
+       └─► Reservation::processPayment()
+            └─► Payment::process()
+                 └─► PaymentStrategy::processPayment()
+                      └─► CreditCardPayment::processPayment()
+                           └─► validatePayment()
+
+Depth: 7 levels
+
+
+INTERVIEW TALKING POINTS
+=========================
+
+"Let me walk you through the complete flow..."
+
+1. Start: Singleton
+   "The system starts by getting the Singleton instance. This ensures
+    only one CarRentalSystem exists. I used thread-safe double-checked
+    locking for concurrent access."
+
+2. Factory: Vehicle Creation
+   "We use Factory Pattern to create vehicles. When we call
+    createVehicle(ECONOMY), it returns an EconomyVehicle but as a
+    Vehicle pointer, enabling polymorphism."
+
+3. Strategy: Payment
+   "Users can choose from 5 payment methods. Each is a concrete strategy.
+    When processPayment() is called, it executes the selected strategy's
+    logic. We can switch strategies at runtime."
+
+4. State: Lifecycle
+   "Reservations follow a strict lifecycle: PENDING → CONFIRMED →
+    IN_PROGRESS → COMPLETED. Each transition is validated. You can't
+    skip states."
+
+5. Integration
+   "All patterns work together seamlessly. Singleton coordinates,
+    Factory creates, Strategy processes payments, and State manages
+    lifecycle."
+
+
+PATTERN INTERACTION EXAMPLE
+============================
+
+User books a car:
+
+1. Singleton: system->createReservation()
+   │
+2. Factory: (vehicle already created)
+   │
+3. Enums: Check VehicleStatus::AVAILABLE
+   │
+4. Strategy: Payment method selected
+   │         └─► CreditCardPayment strategy
+   │
+5. State: Reservation created in PENDING
+   │      └─► Payment processed
+   │           └─► State → CONFIRMED
+   │                └─► Pickup
+   │                     └─► State → IN_PROGRESS
+   │                          └─► Return
+   │                               └─► State → COMPLETED
+
+All 5 patterns used in single flow!
+
+
+FILE REFERENCES
+===============
+
+CODE_FLOW.md includes references to:
+- CarRentalSystem.h (multiple methods)
+- VehicleFactory.h (createVehicle)
+- PaymentStrategy.h (all strategies)
+- Reservation.h (state transitions)
+- Store.h (inventory management)
+- Vehicle.h (polymorphism)
+- main.cpp (driver code)
+
+All with line numbers for easy lookup!
+
+
+VISUAL ELEMENTS IN EXECUTION_FLOW.txt
+======================================
+
+✓ Boxes with rounded corners for steps
+✓ Arrows showing flow direction
+✓ Decision diamonds for if/else
+✓ State transition arrows
+✓ Hierarchical trees for patterns
+✓ Parallel flows for alternatives
+✓ Integration maps
+✓ Call sequences
+
+
+QUICK REFERENCE
+===============
+
+Want to understand:
+- How Singleton works? → CODE_FLOW.md Section 1.2
+- How Factory creates? → CODE_FLOW.md Section 3.1
+- How Strategy selects? → CODE_FLOW.md Section 6.1-6.3
+- How States transition? → CODE_FLOW.md Section 7
+- How Conflicts detected? → CODE_FLOW.md Section 8
+
+Want to visualize:
+- Complete flow? → EXECUTION_FLOW.txt (top section)
+- State diagram? → EXECUTION_FLOW.txt (state diagram section)
+- Pattern integration? → EXECUTION_FLOW.txt (integration section)
+- Decision trees? → EXECUTION_FLOW.txt (conflict prevention)
+
+
+STATISTICS
+==========
+
+CODE_FLOW.md:
+- Lines: ~800
+- Sections: 9 major
+- Code blocks: 50+
+- Flow diagrams: 10
+- Method calls tracked: 26
+
+EXECUTION_FLOW.txt:
+- Lines: ~500
+- ASCII diagrams: 9
+- State transitions: 6
+- Pattern visualizations: 5
+- Alternative paths: 4
+
+
+STATUS
+======
+
+✅ CODE_FLOW.md - Complete detailed explanation
+✅ EXECUTION_FLOW.txt - Visual flow diagrams
+✅ Both documents production-ready
+✅ Interview-ready
+✅ All 5 patterns covered
+✅ Complete user journey documented
+✅ All edge cases explained
+
+================================================================================
+                   CODE FLOW FULLY DOCUMENTED!
+================================================================================
+

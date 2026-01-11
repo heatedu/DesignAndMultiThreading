@@ -1,0 +1,33 @@
+After State:
+ParkingLot: Factory,Strategy,Singleton[Videos]
+VendingMachine:State,Strategy[Videos]
+TicTacToe: Strategy,State,Observer,Factory[Videos]
+Snake and food: Strategy,Factory,Singleton,Observer[Videos]
+CarRental:Singleton,Factory,Strategy
+ATMMachine:State,Factory
+Chess:Strategy,Singleton,Factory,Observer,State
+After Builder(HttpRequest):
+InventoryManagement:Singleton,Observer,Factory,Strategy,Builder
+After Command:
+Elevator:Observer,Command,Strategy,Factory
+
+Splitwise:Factory,Observer
+After Composite:
+FileSystem:Composite,Singleton
+After Chain of Responsibility:
+LoggingSystem:Chain Of Responsibility,Strategy,Singleton
+
+
+in c++
+you have to design low level the code for ,keep the code such that the ques and solution can be discussed in 1hour discuss with an SDE2,also give me code to add and proper files add in the project directory @CarRentalCursor also it must be working visual studio code
+The design patterns you have to use are: 
+The rules are:
+Setup:
+Operation:
+
+Safety Features:
+Interview Setting 🤝
+Point 2: Clarifying Requirements:
+Interviewer: We want a system that:
+Candidate: To summarize, the key requirements are:
+Interviewer: Perfect, let's proceed.

@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\Interfaces">
+      <UniqueIdentifier>{a1b2c3d4-e5f6-4789-a012-3b4c5d6e7f8a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Implementations">
+      <UniqueIdentifier>{b2c3d4e5-f6a7-5890-b123-4c5d6e7f8a9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Utilities">
+      <UniqueIdentifier>{c3d4e5f6-a7b8-6901-c234-5d6e7f8a9b0c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Cache.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CacheStorage.h">
+      <Filter>Header Files\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="DBStorage.h">
+      <Filter>Header Files\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="WritePolicy.h">
+      <Filter>Header Files\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="EvictionAlgorithm.h">
+      <Filter>Header Files\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="InMemoryCacheStorage.h">
+      <Filter>Header Files\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="SimpleDBStorage.h">
+      <Filter>Header Files\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="WriteThroughPolicy.h">
+      <Filter>Header Files\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="LRUEvictionAlgorithm.h">
+      <Filter>Header Files\Implementations</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyBasedExecutor.h">
+      <Filter>Header Files\Utilities</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

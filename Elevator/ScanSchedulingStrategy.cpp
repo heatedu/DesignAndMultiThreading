@@ -23,11 +23,24 @@ int ScanSchedulingStrategy::getNextStop(Elevator* elevator) {
         requests.pop();
         int floor = req.getFloor();
         
-        if (floor > currentFloor) {
-            upFloors.push_back(floor);
-        } else if (floor < currentFloor) {
-            downFloors.push_back(floor);
-        } else {
+        if (floor > currentFloor) 
+        {
+            //only add to upfloors if internal or external going up
+            if(req.checkIsInternalRequest() || req.getDirection()==Direction::UP)
+                upFloors.push_back(floor);
+            else
+                downFloors.push_back(floor); //External DOWN request goes to downfloors
+        } 
+        else if (floor < currentFloor) 
+        {
+            //only add to downfloors if internal or external going DOWN
+            if(req.checkIsInternalRequest() || req.getDirection()==Direction::DOWN)
+                downFloors.push_back(floor);
+            else
+                upFloors.push_back(floor);//External UP request goes to downfloors
+        } 
+        else 
+        {
             return currentFloor; // Already at requested floor
         }
     }

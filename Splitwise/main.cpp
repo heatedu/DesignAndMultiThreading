@@ -6,6 +6,7 @@
 #include "../include/SplitFactory.h"
 #include "../include/ExpenseManager.h"
 #include "../include/BalanceSheet.h"
+#include "../include/SplitDetails.h"
 
 int main() {
     std::cout << "=== Splitwise Expense Sharing System ===\n" << std::endl;
@@ -31,7 +32,7 @@ int main() {
     
     // Use Factory Pattern to create an Equal Split
     auto equalSplit = SplitFactory::createSplit("EQUAL");
-    std::map<std::string, std::any> splitDetails;
+    SplitDetails splitDetails;  // Empty details for equal split
     auto dinnerShares = equalSplit->calculateSplit(60.0, participants, splitDetails);
     
     Expense dinnerExpense("e1", "Dinner", 60.0, alice, participants, dinnerShares);
@@ -51,8 +52,7 @@ int main() {
     percentages[bob] = 30.0;
     percentages[charlie] = 30.0;
     
-    std::map<std::string, std::any> percentageSplitDetails;
-    percentageSplitDetails["percentages"] = percentages;
+    SplitDetails percentageSplitDetails(percentages);  // Use proper structure
     
     auto percentageSplit = SplitFactory::createSplit("PERCENTAGE");
     auto movieShares = percentageSplit->calculateSplit(45.0, participants, percentageSplitDetails);

@@ -3,8 +3,9 @@
 std::map<User, double> EqualSplit::calculateSplit(
     double amount,
     const std::vector<User>& participants,
-    const std::map<std::string, std::any>& splitDetails) {
+    const SplitDetails& details) {
     
+    // Equal split doesn't need any details
     double amountPerPerson = amount / participants.size();
     std::map<User, double> splits;
     
